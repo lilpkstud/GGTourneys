@@ -68,12 +68,19 @@
 				</div>
 				<div id="menu">
 					<ul>
-						<li class="current-menu-item"><a href="/">Home</a></li>
-						<li><a href="webpages/myProfile.html">My Profile</a></li>
-						<li><a href="#">Friends</a></li>
-						<li><a href="#">Messages</a></li> 
-						<li><a href="webpages/contact.html">Contact Us</a></li> 
-						<li><a href="#" onclick="fbLogin();">Log In</a></li>
+						<li class="current-menu-item"><a href="../index.php">Home</a></li>
+						<li class="menu-item-has-children"><a href="#">Profile</a>
+							<ul class="sub-menu">
+								<li><a href="myProfile.html">My Profile</a></li>
+								<li><a href="../login.php">Login</a></li>
+								<li><a href="../register.php">Register</a></li>
+								<li><a href="../memberlist.php">Member List</a></li>
+								<li><a href="../logout.php">Logout</a></li>
+							</ul>
+						</li>
+						<!--<li><a href="#">Friends</a></li>
+						<li><a href="#">Messages</a></li> -->
+						<li><a href="contact.html">Contact Us</a></li> 
 					</ul>
 				</div>
 			</nav>
@@ -91,18 +98,16 @@
 
 		if ($result->num_rows > 0) {
 			echo "<table style='width:80%' bgcolor='white' align = 'center'>";
-			echo "<th> Tournament </th> <th> Maximum Players </th> <th> Prize </th> <th> ID </th>";
+			echo "<th> Tournament </th> <th> Maximum Players </th> <th> Prize </th> <th> ID </th> <th> Time </th> <th> Current Players </th>";
 			while($row = $result->fetch_assoc()) {
 				echo "<tr> 
 					<td> ". $row[Title] ."</td> 
 					<td>" . $row[Max_Players] . "</td> 
 					<td> $". $row[Cash]."</td>
 					<td>".$row[Tournament_ID]."</td> 
+					<td>".$row[Time]."</td> 
+					<td>".$row[Current_Players]."</td> 
 					<td> 
-						<form action ='routes.php' method = 'post'> 
-							<input type = 'hidden' name = 'tournament_id' value = ' ". $row[Tournament_ID]."'>
-							<input type = 'submit' value = 'JOIN NOW'> 
-						</form> 
 					</td>".
 				"</tr>";
 			}
