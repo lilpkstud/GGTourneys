@@ -28,7 +28,10 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
   
 	<title>GGTOURNEYS</title>
-  
+  	
+  	<!-- Angular __________________________________________ -->
+  	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
+
 	<!-- CSS _____________________________________________-->
 	<link href='http://fonts.googleapis.com/css?family=Josefin+Sans:400,600&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
 
@@ -70,7 +73,7 @@
 						<li class="menu-item-has-children"><a href="#">Profile</a>
 							<ul class="sub-menu">
 								<li><a href="myProfile.html">My Profile</a></li>
-								<li><a href="../login.php">Login</a></li>
+								<li><a href="../login.php">Pricing</a></li>
 								<li><a href="../register.php">Register</a></li>
 								<li><a href="../memberlist.php">Member List</a></li>
 								<li><a href="../logout.php">Logout</a></li>
@@ -84,60 +87,122 @@
 				</div>
 			</nav>
 	</header>
+
 	<section id="content" role="main">
-		<?php
+		<div class = "team_list">
+			<h1> My Teams </h1>
+			<?php
+				$username = $_SESSION['user']['username'];
+				$userID = $_SESSION['user']['id'];
+				
+				$query = "
+					SELECT 
+						Teams.*, users.id, users.username, users.username as Administrator, users.username as Member
+					FROM Teams LEFT JOIN users ON users.id = Teams.Admin_ID 
+					WHERE Teams.Member_ID = $userID OR Teams.Admin_ID = $userID
+					
+				";
 
-			/*--------------------BEGINNING OF THE CONNECTION PROCESS------------------*/
-			//define constants for db_host, db_user, db_pass, and db_database
-			//adjust the values below to match your database settings
-			define("DB_HOST", "localhost");
-			define("DB_USER", "jameslee_2");
-			define("DB_PASS", "xV!*pcB[5c7%"); 
-			define("DB_DATABASE", "jameslee_ggtourneys"); 
+				try 
+			    { 
+			        // These two statements run the query against your database table. 
+			        $stmt = $db->prepare($query); 
+			        $stmt->execute(); 
+			    } 
+			    catch(PDOException $ex) 
+			    { 
+			        // Note: On a production website, you should not output $ex->getMessage(). 
+			        // It may provide an attacker with helpful information about your code.  
+			        die("Failed to run query: " . $ex->getMessage()); 
+			    } 
 
-			//connect to database host
-			$connection = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_DATABASE);
+			    // Finally, we can retrieve all of the found rows into an array using fetchAll 
+			    $rows = $stmt->fetchAll(); 
 
-			//make sure connection is good or die
-			if ($connection->connect_errno) 
-			{
-			    $console.log("DID NOT GO THROUGH");
-			    die("Failed to connect to MySQL: (" . $connection->connect_errno . ") " . $connection->connect_error);
-			}
-			/*-----------------------END OF CONNECTION PROCESS------------------------*/
+			    
+			    echo "<table style = 'width: 100%' >";
+			    echo "<th> Team Name </th> <th> Administrator </th> <th> Action </th>";
+			    foreach ($rows as $row):
+			    	//Showing Teams if user is the admin of the Team 
+			    	if($userID == $row['Admin_ID'])
+			    	{
+			    		echo "<tr>
+							<td> <a href ='/#'>".$row['Team_Name']."</a> </td>
+							<td>".$row['Administrator']."</td>
+							<td>
+								<form action = '../controller/teamController.php/' method = 'post'>
+									<input type = 'hidden' name = 'edit_team' value = 'edit_team'>
+									<input type = 'hidden' name = 'team_id' value = ' ". $row['Team_ID']." '>
+									<input type = 'submit' value = 'Edit'>
+								</form>
 
-			/*----------------------DATABASE QUERYING FUNCTIONS-----------------------*/
+								<form action = '../controller/teamController.php/' method = 'post'>
+									<input type = 'hidden' name = 'delete_team' value = 'delete_team'>
+									<input type = 'hidden' name = 'team_id' value = ' ". $row['Team_ID']." '>
+									<input type = 'submit' value = 'Delete'>
+								</form>
+							</td>
+							
+			    		</tr>";
+			    	}
+			    	else
+			    	{
+				    	echo "<tr> 
+							<td> <a href ='/#'>".$row['Team_Name']."</a> </td>
+							<td>".$row['Administrator']."</td>
+				    	</tr>";
+			    	}
+			    endforeach;				    
+			    echo "</table>";
 
-			?> 
-			
-			<h1> Current Teams </h1>
-			<?
-			//SELECT - used when expecting single OR multiple results
-			//returns an array that contains one or more associative arrays
-			$username = $_SESSION['user']['username'];
-			$userID = $_SESSION['user']['id'];
-			$sql = "SELECT Teams.*, users.id, users.username, users.email FROM Teams JOIN users ON users.id = Teams.admin_id
-			WHERE Teams.Member_ID = $userID OR Teams.Admin_ID = $userID";
-			$result = $connection->query($sql);
-
-			if ($result->num_rows > 0) {
-				echo "<table>";
-				echo "<th> Team Name </th> <th> Administrator </th>";
-				while($row = $result->fetch_assoc()) {
-					echo "<tr> 
-						<td> ". $row[Team_Name] ."</td>
-						<td>". $row[username]."</td>".
-
-					"</tr>";
-				}
-				echo "</table>";
-			} else {
-				echo "0 results";
-			}
-			$connection->close();
-		
 			?>
-		</div>	
+		</div>
+		<div>
+			<br>
+			<?php 
+			//Creating New Team Message Errors 
+			 if(isset($_GET['message'])) {
+                	if($_GET['message'] == 1) {
+                		echo "Please Enter A Team Name.";
+                    } else if($_GET['message'] == 2) {
+                    	echo "Please enter the Max Players for your new team.";
+                    } else if($_GET['message'] == 3) {
+                    	echo "Unfortunately, <strong>".$_SESSION['create_team_name']."</strong> already exist. Please enter a new name.";
+                    	//Look into cookies so we can delete the $SESSION[team_name]
+                    	unset($_SESSION['create_team_name']);
+                    	//var_dump($_SESSION);
+                    } else if ($_GET['message'] == 4) {
+                    	echo "This email address is already registered";
+                    } 
+            }
+            ?>
+        
+
+			<h1> Create New Team </h1>
+			<form action = "../controller/teamController.php" method = "post">
+				<input type = 'hidden' name = 'create_team' value = 'create_team'>
+				<input type = 'hidden' name = 'user_name' value = <?= $username ?> >
+				<input type = 'hidden' name = 'user_id' value = <?= $userID ?> >
+				<p> 
+					Team Name: <input type = "text" name = "team_name"> 
+				</p>
+				<p>
+					Max Players: 
+					<select name = "max_players">
+						<option value = "--"> -- </option>
+						<option value = "1"> 1 </option>
+						<option value = "2"> 2 </option>
+						<option value = "3"> 3 </option>
+						<option value = "4"> 4 </option>
+						<option value = "5"> 5 </option>
+					</select>
+				</p>
+				<input type = "submit" value = "Create">
+			</form>
+			
+			
+		</div>
+		
 	</section>
 <div class="page_ender">
 		<font color="white">
